@@ -15,3 +15,15 @@
 - 初回は教育コミット `923dac33c02dbdb9b7d6d3f9224bef02fcce336d` からmanifest version 1を公開した。
 - 公開辞書SHA-256は `4049f63fd41abd03d1c7e453b5ee6dbf629eb85f28a7393a9b7710da0b32efe7`。
 - 公開URLから取得したmanifestについて、固定公開鍵で `Signature Verified Successfully` を確認した。
+
+## 2026-08-09 Windows GitHub Release接続
+
+- Windows側の `dictionary-update-v*` GitHub Releaseを固定タグと固定コミットで取得する方式へ変更した。
+- Releaseの `SHA256SUMS` 実バイト列に対するraw 64-byte Ed25519署名を、診和固定公開鍵で検証する。
+- 署名済みSHA-256と4つのRelease JSON実体が一致した場合だけ後続処理へ進む。
+- Release JSONに含まれる学習検証用 `recognized_text`、文脈文、音声設定などはPagesへ転載せず、製品利用に必要な最小項目だけを3つの公開JSONへ変換する。
+- manifestをschema 2へ更新し、Windows表示版 `2026.08.09.1253` を整数 `202608091253` へ変換する。既存公開version以下は拒否する。
+- `hotwords.json`、`contextual_corrections.json`、`automatic_corrections.json` を固定URLで公開し、それぞれの公開実体SHA-256をmanifestへ記録する。
+- 現行診和との互換性維持のため、3構造をまとめた版付き辞書も生成し、manifestの `download_url` と `sha256` で参照できるようにした。
+- Pages用manifestの実バイト列を同じEd25519鍵で署名し、署名直後と公開後に固定公開鍵で検証する。
+- Windows側Releaseの検証またはPages生成に失敗した場合は、既存 `docs/` と公開版を変更しない。

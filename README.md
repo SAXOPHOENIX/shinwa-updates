@@ -6,7 +6,7 @@
 - manifest: https://saxophoenix.github.io/shinwa-updates/v1/dictionaries/generated_ja_manifest.json
 - 更新履歴: https://saxophoenix.github.io/shinwa-updates/updates/
 
-公開処理は `Publish Shinwa dictionary update` ワークフローだけが行います。教育リポジトリの完全な40文字コミットSHAを入力し、そのコミットに固定して検査・署名します。
+公開処理は `Publish Shinwa dictionary update` ワークフローだけが行います。Windows側GitHub Releaseの固定タグと完全な40文字コミットSHAを受け取り、タグ、Release、コミットが一致することを確認してから公開します。
 
 必要なRepository Secrets:
 
@@ -15,3 +15,4 @@
 
 秘密鍵、患者情報、音声、書き起こし、SOAP、カルテ本文、legacy補正候補は公開しません。
 
+Windows側からは `dictionary_update_requested` の `repository_dispatch` を送り、`client_payload.source_tag` と `client_payload.source_commit` を指定します。Release assetsの `SHA256SUMS` とraw Ed25519署名を検証し、成功した場合だけPages用manifestを生成します。

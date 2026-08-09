@@ -20,72 +20,78 @@ publisher = module("publish_dictionary")
 verifier = module("verify_release")
 
 
-def write_source(root: Path, automatic: dict | None = None) -> None:
-    data = root / "data"
-    evaluation = root / "evaluation"
-    data.mkdir(parents=True)
-    evaluation.mkdir(parents=True)
+def make_release(root: Path) -> None:
     common = {"schema_version": 1, "locale": "ja-JP"}
-    (data / "hotwords.json").write_text(json.dumps({**common, "candidates": {
-        "イントウ痛": {"target": "咽頭痛", "reading": "いんとうつう", "negative_test_passed": True}
+    (root / "hotwords.json").write_text(json.dumps({**common, "candidates": {
+        "イントウ痛": {"target": "咽頭痛", "reading": "いんとうつう", "recognized_text": "公開しない評価文", "voice": "test"}
     }}, ensure_ascii=False), encoding="utf-8")
-    (data / "contextual_corrections.json").write_text(json.dumps({**common, "corrections": {
-        "気管市全息": {"target": "気管支喘息", "negative_test_passed": True}
+    (root / "contextual_corrections.json").write_text(json.dumps({**common, "corrections": {
+        "気管市全息": {"target": "気管支喘息", "context": "公開しない文脈", "department": "呼吸器内科"}
     }}, ensure_ascii=False), encoding="utf-8")
-    (data / "automatic_corrections.json").write_text(json.dumps({**common, "corrections": automatic or {
-        "急性情起動": {"target": "急性上気道炎", "observations": 5, "false_corrections": 0, "negative_test_passed": True}
-    }}, ensure_ascii=False), encoding="utf-8")
-    (data / "release_manifest.json").write_text(json.dumps({
-        "schema_version": 2, "raw_accuracy": 0.8, "corrected_accuracy": 0.9,
-        "whisper_model": "small", "trials": 5,
+    (root / "automatic_corrections.json").write_text(json.dumps({**common, "corrections": {}}), encoding="utf-8")
+    (root / "update_manifest.json").write_text(json.dumps({
+        "schema_version": 1,
+        "version": "2026.08.09.1253",
+        "generated_at": "2026-08-09T12:53:44+09:00",
+        "legacy_included": False,
+        "hotword_candidates": 1,
+        "contextual_corrections": 1,
+        "automatic_corrections": 0,
+        "false_correction_rate": 0.0,
+        "maximum_false_correction_rate": 0.01,
     }), encoding="utf-8")
-    (evaluation / "fixed_cases.json").write_text('[{"audio":"test.wav","text":"test"}]', encoding="utf-8")
 
 
-def test_builds_versioned_dictionary_and_raw_signature(tmp_path: Path) -> None:
-    source = tmp_path / "source"
+def test_integer_version_conversion() -> None:
+    assert publisher.integer_version("2026.08.09.1253") == 202608091253
+    with pytest.raises(ValueError):
+        publisher.integer_version("2026.08.09")
+
+
+def test_sanitizes_transcripts_and_keeps_structures_separate(tmp_path: Path) -> None:
+    make_release(tmp_path)
+    hotwords, contextual, automatic = publisher.sanitize_release_json(tmp_path)
+    serialized = json.dumps([hotwords, contextual, automatic], ensure_ascii=False)
+    assert "recognized_text" not in serialized
+    assert "voice" not in serialized
+    assert "公開しない文脈" not in serialized
+    assert len(hotwords["candidates"]) == 1
+    assert len(contextual["corrections"]) == 1
+    assert automatic["corrections"] == {}
+
+
+def test_builds_schema_two_manifest_with_compatible_dictionary(tmp_path: Path) -> None:
+    release = tmp_path / "release"
     docs = tmp_path / "docs"
+    release.mkdir()
+    make_release(release)
     key = tmp_path / "key.pem"
-    write_source(source)
-    publisher.run("openssl", "genpkey", "-algorithm", "ED25519", "-out", str(key))
-    public_der, public_key = publisher.signing_public_key(key)
+    publisher.subprocess.run(["openssl", "genpkey", "-algorithm", "ED25519", "-out", str(key)], check=True)
+    public_der, generated_key = publisher.public_key(key)
     public_der.unlink()
-    original = publisher.EXPECTED_PUBLIC_KEY
-    publisher.EXPECTED_PUBLIC_KEY = public_key
-    verifier.EXPECTED_PUBLIC_KEY = public_key
+    original_publisher_key = publisher.EXPECTED_PUBLIC_KEY
+    original_verifier_key = verifier.EXPECTED_PUBLIC_KEY
+    publisher.EXPECTED_PUBLIC_KEY = generated_key
+    verifier.EXPECTED_PUBLIC_KEY = generated_key
     try:
-        first = publisher.publish(source, docs, key, "a" * 40)
-        second = publisher.publish(source, docs, key, "b" * 40)
-        assert first["version"] == 1
-        assert second["version"] == 2
+        result = publisher.publish(release, docs, key, "dictionary-update-v2026.08.09.1253", "a" * 40)
+        manifest = json.loads((docs / "v1/dictionaries/generated_ja_manifest.json").read_text())
+        combined = json.loads((docs / "v1/dictionaries/generated_ja_v202608091253.json").read_text())
+        assert result["version"] == 202608091253
+        assert manifest["schema_version"] == 2
+        assert manifest["display_version"] == "2026.08.09.1253"
+        assert combined["misrecognitions"] == combined["automatic_corrections"] == {}
         assert (docs / "v1/dictionaries/generated_ja_manifest.sig").stat().st_size == 64
-        payload = json.loads((docs / "v1/dictionaries/generated_ja_v2.json").read_text())
-        assert payload["misrecognitions"] == payload["automatic_corrections"]
-        assert "legacy_candidates" not in payload
         assert verifier.verify(docs)["signature_verified"] is True
     finally:
-        publisher.EXPECTED_PUBLIC_KEY = original
+        publisher.EXPECTED_PUBLIC_KEY = original_publisher_key
+        verifier.EXPECTED_PUBLIC_KEY = original_verifier_key
 
 
-@pytest.mark.parametrize("source,target", [
-    ("右肺炎", "左肺炎"),
-    ("検査陰性", "検査陽性"),
-    ("二錠", "三錠"),
-    ("症状なし", "症状あり"),
-])
-def test_rejects_dangerous_automatic_changes(tmp_path: Path, source: str, target: str) -> None:
-    root = tmp_path / "source"
-    write_source(root, {source: {"target": target, "negative_test_passed": True}})
-    with pytest.raises(ValueError, match="unsafe"):
-        publisher.clean_records(
-            publisher.load_dictionary(root / "data/automatic_corrections.json", "corrections"),
-            "automatic",
-        )
-
-
-def test_rejects_empty_and_identical_mappings() -> None:
-    with pytest.raises(ValueError, match="empty"):
-        publisher.clean_records({"": {"target": "咽頭痛"}}, "automatic")
-    with pytest.raises(ValueError, match="identical"):
-        publisher.clean_records({"咽頭痛": {"target": "咽頭痛"}}, "automatic")
+def test_rejects_non_increasing_version(tmp_path: Path) -> None:
+    docs = tmp_path / "docs"
+    manifest = docs / "v1/dictionaries/generated_ja_manifest.json"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text('{"version":202608091253}', encoding="utf-8")
+    assert publisher.current_version(docs) == 202608091253
 

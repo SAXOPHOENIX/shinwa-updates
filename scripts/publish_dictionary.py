@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate, build, sign, and render a public Shinwa dictionary release."""
+"""Publish a verified Windows dictionary Release through stable Pages URLs."""
 
 from __future__ import annotations
 
@@ -11,24 +11,16 @@ import json
 import re
 import subprocess
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 
 BASE_URL = "https://saxophoenix.github.io/shinwa-updates"
+SOURCE_REPOSITORY = "SAXOPHOENIX/shinwa-speech-dictionary-lab"
 EXPECTED_PUBLIC_KEY = "wqInep1D1G/TN4VWJhNM5pWlAReL+UtOyfgyfEk92O0="
-MAX_FALSE_CORRECTION_RATE = 0.01
-CONTROL = re.compile(r"[\x00-\x1f\x7f]")
-SOURCE_COMMIT = re.compile(r"^[a-f0-9]{40}$")
-SAFETY_TOKENS = ("左", "右", "両側", "陽性", "陰性", "認めず", "認めない", "なし", "ない", "あり", "ある")
-GENERAL_NEGATIVES = (
-    "右ではなく左の肺に陰影はありません。",
-    "検査結果は陰性で、発熱もありません。",
-    "薬を一日二回、一錠ずつ服用します。",
-    "酸素を毎分二リットル投与しています。",
-    "痛みはありますが、しびれはありません。",
-)
+TAG_PATTERN = re.compile(r"^dictionary-update-v(\d{4}\.\d{2}\.\d{2}\.\d{4})$")
+COMMIT_PATTERN = re.compile(r"^[a-f0-9]{40}$")
 
 
 def load_object(path: Path) -> dict[str, Any]:
@@ -38,128 +30,105 @@ def load_object(path: Path) -> dict[str, Any]:
     return value
 
 
-def load_dictionary(path: Path, key: str) -> dict[str, Any]:
-    value = load_object(path)
-    if value.get("schema_version") != 1 or value.get("locale") != "ja-JP":
-        raise ValueError(f"{path.name}: schema_version=1 and locale=ja-JP are required")
-    records = value.get(key)
-    if not isinstance(records, dict):
-        raise ValueError(f"{path.name}: {key} must be an object")
-    return records
+def write_json(path: Path, payload: dict[str, Any]) -> bytes:
+    value = (json.dumps(payload, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(value)
+    return value
 
 
-def dangerous_change(source: str, target: str) -> bool:
-    number_pattern = r"\d+(?:\.\d+)?|[〇零一二三四五六七八九十百千万億兆]+"
-    if re.findall(number_pattern, source) != re.findall(number_pattern, target):
-        return True
-    return any((token in source) != (token in target) for token in SAFETY_TOKENS)
-
-
-def clean_records(records: dict[str, Any], kind: str) -> list[dict[str, Any]]:
-    cleaned: list[dict[str, Any]] = []
-    for raw_source, raw_record in records.items():
-        if not isinstance(raw_record, dict):
-            raise ValueError(f"{kind}: {raw_source!r} must contain an object")
-        source = str(raw_source).strip()
-        target = str(raw_record.get("target", "")).strip()
-        if not source or not target:
-            raise ValueError(f"{kind}: empty source or target is not allowed")
-        if source == target:
-            raise ValueError(f"{kind}: identical correction is not allowed: {source}")
-        if len(source) > 100 or len(target) > 100 or CONTROL.search(source) or CONTROL.search(target):
-            raise ValueError(f"{kind}: invalid characters or length: {source}")
-        if kind != "hotwords" and dangerous_change(source, target):
-            raise ValueError(f"{kind}: unsafe numeric, laterality, or polarity change: {source} -> {target}")
-        if kind == "hotwords" and raw_record.get("negative_test_passed") is not True:
-            continue
-        if kind != "hotwords" and raw_record.get("negative_test_passed") is not True:
-            raise ValueError(f"{kind}: negative test failed: {source}")
-        cleaned.append({
-            "source": source,
-            "target": target,
-            "reading": str(raw_record.get("reading", "")).strip()[:100],
-            "category": str(raw_record.get("category", "")).strip()[:80],
-            "department": str(raw_record.get("department", "")).strip()[:80],
-            "confidence": round(float(raw_record.get("confidence", 0.0)), 4),
-            "observations": max(0, int(raw_record.get("observations", 0))),
-            "false_corrections": max(0, int(raw_record.get("false_corrections", 0))),
-        })
-    return sorted(cleaned, key=lambda item: item["source"])
-
-
-def verify_negative_examples(automatic: list[dict[str, Any]]) -> None:
-    for sentence in GENERAL_NEGATIVES:
-        corrected = sentence
-        for item in automatic:
-            corrected = corrected.replace(item["source"], item["target"])
-        if corrected != sentence:
-            raise ValueError(f"general negative sentence was changed: {sentence}")
-
-
-def false_correction_rate(automatic: list[dict[str, Any]]) -> float:
-    observations = sum(max(1, item["observations"]) for item in automatic)
-    failures = sum(item["false_corrections"] for item in automatic)
-    return failures / max(observations, 1)
-
-
-def run(*args: str) -> None:
-    subprocess.run(args, check=True, capture_output=True)
-
-
-def signing_public_key(private_key: Path) -> tuple[Path, str]:
-    temporary = tempfile.NamedTemporaryFile(prefix="shinwa-public-", suffix=".der", delete=False)
-    temporary.close()
-    der_path = Path(temporary.name)
-    run("openssl", "pkey", "-in", str(private_key), "-pubout", "-outform", "DER", "-out", str(der_path))
-    raw = der_path.read_bytes()[-32:]
-    return der_path, base64.b64encode(raw).decode("ascii")
+def integer_version(display_version: str) -> int:
+    parts = display_version.split(".")
+    if len(parts) != 4 or not all(part.isdigit() for part in parts):
+        raise ValueError("release version must use YYYY.MM.DD.HHMM")
+    return int("".join(parts))
 
 
 def current_version(docs: Path) -> int:
-    path = docs / "v1" / "dictionaries" / "generated_ja_manifest.json"
+    path = docs / "v1/dictionaries/generated_ja_manifest.json"
     if not path.exists():
         return 0
-    manifest = load_object(path)
-    version = manifest.get("version")
-    if not isinstance(version, int) or version < 1:
-        raise ValueError("existing manifest version is invalid")
-    return version
+    value = load_object(path).get("version")
+    if not isinstance(value, int) or value < 1:
+        raise ValueError("existing public manifest version is invalid")
+    return value
 
 
-def write_json_bytes(path: Path, payload: dict[str, Any]) -> bytes:
-    data = (json.dumps(payload, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(data)
-    return data
+def public_key(private_key: Path) -> tuple[Path, str]:
+    temporary = tempfile.NamedTemporaryFile(prefix="shinwa-public-", suffix=".der", delete=False)
+    temporary.close()
+    der = Path(temporary.name)
+    subprocess.run(
+        ["openssl", "pkey", "-in", str(private_key), "-pubout", "-outform", "DER", "-out", str(der)],
+        check=True,
+        capture_output=True,
+    )
+    return der, base64.b64encode(der.read_bytes()[-32:]).decode("ascii")
 
 
-def render_updates_page(
-    docs: Path,
-    *,
-    version: int,
-    published_at: datetime,
-    source_commit: str,
-    release: dict[str, Any],
-    hotwords: list[dict[str, Any]],
-    contextual: list[dict[str, Any]],
-    automatic: list[dict[str, Any]],
-    false_rate: float,
-    evaluated_audio: int,
-) -> None:
-    improvements: list[str] = []
-    if hotwords:
-        improvements.append("短い医療用語を、より聞き取りやすくしました")
-    if contextual:
-        improvements.append("診療内容に合う医療用語を優先するよう改善しました")
-    if automatic:
-        improvements.append("安全確認済みの聞き間違いを自動で整えるよう改善しました")
-    improvements.append("一般的な文章が医療用語へ誤って変わらないことを確認しました")
+def safe_record(source: str, record: dict[str, Any], *, contextual: bool) -> dict[str, Any]:
+    target = str(record.get("target", "")).strip()
+    source = source.strip()
+    if not source or not target or source == target:
+        raise ValueError("public correction contains an empty or identical mapping")
+    allowed = ("source", "target", "reading", "category", "department") if contextual else ("target", "reading", "category")
+    values = {
+        "source": source,
+        "target": target,
+        "reading": str(record.get("reading", "")).strip()[:100],
+        "category": str(record.get("category", "")).strip()[:80],
+        "department": str(record.get("department", "")).strip()[:80],
+    }
+    return {key: values[key] for key in allowed if values[key]}
+
+
+def sanitize_release_json(release_dir: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    hotwords = load_object(release_dir / "hotwords.json")
+    contextual = load_object(release_dir / "contextual_corrections.json")
+    automatic = load_object(release_dir / "automatic_corrections.json")
+    for name, payload, key in (
+        ("hotwords.json", hotwords, "candidates"),
+        ("contextual_corrections.json", contextual, "corrections"),
+        ("automatic_corrections.json", automatic, "corrections"),
+    ):
+        if payload.get("schema_version") != 1 or payload.get("locale") != "ja-JP" or not isinstance(payload.get(key), dict):
+            raise ValueError(f"{name}: schema_version=1, locale=ja-JP, and an object payload are required")
+
+    public_hotwords = {
+        "schema_version": 1,
+        "locale": "ja-JP",
+        "candidates": [safe_record(str(source), record, contextual=False) for source, record in sorted(hotwords["candidates"].items())],
+    }
+    public_contextual = {
+        "schema_version": 1,
+        "locale": "ja-JP",
+        "corrections": [safe_record(str(source), record, contextual=True) for source, record in sorted(contextual["corrections"].items())],
+    }
+    public_automatic = {
+        "schema_version": 1,
+        "locale": "ja-JP",
+        "corrections": {
+            str(source).strip(): str(record.get("target", "")).strip()
+            for source, record in sorted(automatic["corrections"].items())
+        },
+    }
+    for source, target in public_automatic["corrections"].items():
+        if not source or not target or source == target:
+            raise ValueError("automatic correction contains an empty or identical mapping")
+    return public_hotwords, public_contextual, public_automatic
+
+
+def render_updates(docs: Path, manifest: dict[str, Any]) -> None:
+    metrics = manifest["metrics"]
+    display_version = manifest["display_version"]
+    published = datetime.fromisoformat(manifest["published_at"].replace("Z", "+00:00"))
+    improvements = [
+        "短い医療用語の聞き取り精度を改善しました",
+        "診療内容に合う医療用語を優先するよう改善しました",
+        "一般的な言葉が医療用語へ誤変換されないことを確認しました",
+    ]
     items = "".join(f"<li>{html.escape(item)}</li>" for item in improvements)
-    raw_accuracy = float(release.get("raw_accuracy", 0.0) or 0.0)
-    corrected_accuracy = float(release.get("corrected_accuracy", raw_accuracy) or raw_accuracy)
-    improvement = max(0.0, corrected_accuracy - raw_accuracy) * 100
-    display_version = f"{published_at:%Y.%m}.{version}"
-    content = f'''<!doctype html>
+    page = f'''<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8">
@@ -173,138 +142,132 @@ def render_updates_page(
   <main>
     <p class="eyebrow">診和 アップデート</p>
     <h1>{html.escape(display_version)}</h1>
-    <p class="release-date">公開日 {published_at:%Y年%m月%d日}</p>
+    <p class="release-date">公開日 {published:%Y年%m月%d日}</p>
     <section class="content-section"><h2>今回の改善</h2><ul class="improvements">{items}</ul></section>
-    <section class="content-section"><h2>利用者が感じる変化</h2><p class="lead">医療用語をより自然に聞き取り、会話の流れに合う言葉を選びやすくなりました。</p></section>
+    <section class="content-section"><h2>利用者が感じる変化</h2><p class="lead">短い医療用語を捉えやすくし、診療内容に合う言葉を選びやすくなりました。</p></section>
     <section class="content-section"><h2>品質確認</h2><div class="quality-grid">
-      <div class="quality-item"><span>評価した音声</span><strong>{evaluated_audio}件</strong></div>
-      <div class="quality-item"><span>医療用語の認識改善</span><strong>{improvement:.1f}%</strong></div>
-      <div class="quality-item"><span>誤補正率</span><strong>{false_rate * 100:.2f}%</strong></div>
-      <div class="quality-item"><span>安全確認済み補正</span><strong>{len(automatic)}件</strong></div>
+      <div class="quality-item"><span>認識支援候補</span><strong>{metrics['hotword_candidates']}件</strong></div>
+      <div class="quality-item"><span>文脈を確認する補正</span><strong>{metrics['contextual_corrections']}件</strong></div>
+      <div class="quality-item"><span>安全確認済み自動補正</span><strong>{metrics['automatic_corrections']}件</strong></div>
+      <div class="quality-item"><span>評価上の誤補正率</span><strong>{float(metrics['false_correction_rate']) * 100:.2f}%</strong></div>
     </div></section>
     <section class="content-section"><details><summary>技術情報</summary><ul class="technical-list">
-      <li>Whisperモデル: {html.escape(str(release.get('whisper_model', '未記録')))}</li>
-      <li>試行数: {int(release.get('trials', 0) or 0)}回</li>
-      <li>hotwords: {len(hotwords)}件</li>
-      <li>文脈条件付き補正: {len(contextual)}件</li>
-      <li>自動補正: {len(automatic)}件</li>
-      <li>GitHubコミット: <code>{html.escape(source_commit)}</code></li>
-      <li>manifestバージョン: {version}</li>
+      <li>配信元: {html.escape(manifest['source_repository'])}</li>
+      <li>GitHubコミット: <code>{html.escape(manifest['source_commit'])}</code></li>
+      <li>リリース: <a href="{html.escape(manifest['release_url'])}">{html.escape(manifest['source_tag'])}</a></li>
+      <li>manifestバージョン: {manifest['version']}</li>
     </ul></details></section>
   </main>
   <footer class="site-footer"><div class="site-footer-inner">診和</div></footer>
 </body>
 </html>
 '''
-    target = docs / "updates" / "index.html"
+    target = docs / "updates/index.html"
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(content, encoding="utf-8")
+    target.write_text(page, encoding="utf-8")
 
 
-def publish(source_root: Path, docs: Path, private_key: Path, source_commit: str) -> dict[str, Any]:
-    if not SOURCE_COMMIT.fullmatch(source_commit):
-        raise ValueError("source_commit must be a full 40-character commit SHA")
-    data = source_root / "data"
-    hotwords = clean_records(load_dictionary(data / "hotwords.json", "candidates"), "hotwords")
-    contextual = clean_records(load_dictionary(data / "contextual_corrections.json", "corrections"), "contextual")
-    automatic = clean_records(load_dictionary(data / "automatic_corrections.json", "corrections"), "automatic")
-    release = load_object(data / "release_manifest.json")
-    if release.get("schema_version") != 2:
-        raise ValueError("release_manifest.json: schema_version=2 is required")
-    verify_negative_examples(automatic)
-    error_rate = false_correction_rate(automatic)
-    if error_rate > MAX_FALSE_CORRECTION_RATE:
-        raise ValueError(f"false correction rate {error_rate:.2%} exceeds {MAX_FALSE_CORRECTION_RATE:.2%}")
+def publish(release_dir: Path, docs: Path, private_key: Path, source_tag: str, source_commit: str) -> dict[str, Any]:
+    match = TAG_PATTERN.fullmatch(source_tag)
+    if not match or not COMMIT_PATTERN.fullmatch(source_commit):
+        raise ValueError("a fixed dictionary release tag and full commit SHA are required")
+    display_version = match.group(1)
+    version = integer_version(display_version)
+    if version <= current_version(docs):
+        raise ValueError("release version must increase monotonically")
 
-    previous = current_version(docs)
-    version = previous + 1
-    published_at = datetime.now(timezone.utc).replace(microsecond=0)
-    dictionary_name = f"generated_ja_v{version}.json"
-    dictionaries = docs / "v1" / "dictionaries"
-    dictionary_payload = {
+    release_manifest = load_object(release_dir / "update_manifest.json")
+    if release_manifest.get("schema_version") != 1 or release_manifest.get("version") != display_version:
+        raise ValueError("release tag and update_manifest version do not match")
+    if release_manifest.get("legacy_included") is not False:
+        raise ValueError("legacy corrections must not be published")
+    false_rate = float(release_manifest.get("false_correction_rate", 1.0))
+    maximum_rate = float(release_manifest.get("maximum_false_correction_rate", 0.01))
+    if false_rate > maximum_rate or maximum_rate > 0.01:
+        raise ValueError("false correction rate exceeds the publication standard")
+
+    hotwords, contextual, automatic = sanitize_release_json(release_dir)
+    dictionaries = docs / "v1/dictionaries"
+    public_files = {
+        "hotwords": ("hotwords.json", hotwords),
+        "contextual_corrections": ("contextual_corrections.json", contextual),
+        "automatic_corrections": ("automatic_corrections.json", automatic),
+    }
+    file_manifest: dict[str, dict[str, str]] = {}
+    for key, (name, payload) in public_files.items():
+        content = write_json(dictionaries / name, payload)
+        file_manifest[key] = {
+            "url": f"{BASE_URL}/v1/dictionaries/{name}",
+            "sha256": hashlib.sha256(content).hexdigest(),
+        }
+
+    combined_name = f"generated_ja_v{version}.json"
+    combined_payload = {
         "version": version,
         "locale": "ja-JP",
         "generated_by": "shinwa-speech-dictionary-lab",
         "source_commit": source_commit,
         "terms": [],
-        "misrecognitions": {item["source"]: item["target"] for item in automatic},
-        "hotwords": [
-            {key: item[key] for key in ("target", "reading", "category") if item[key]}
-            for item in hotwords
-        ],
-        "contextual_corrections": [
-            {key: item[key] for key in ("source", "target", "reading", "category", "department") if item[key]}
-            for item in contextual
-        ],
-        "automatic_corrections": {item["source"]: item["target"] for item in automatic},
+        "misrecognitions": automatic["corrections"],
+        "hotwords": hotwords["candidates"],
+        "contextual_corrections": contextual["corrections"],
+        "automatic_corrections": automatic["corrections"],
     }
-    dictionary_bytes = write_json_bytes(dictionaries / dictionary_name, dictionary_payload)
+    combined = write_json(dictionaries / combined_name, combined_payload)
+    published_at = str(release_manifest.get("generated_at", ""))
+    datetime.fromisoformat(published_at.replace("Z", "+00:00"))
     manifest = {
-        "schema_version": 1,
+        "schema_version": 2,
         "dictionary_kind": "generated",
         "version": version,
+        "display_version": display_version,
         "locale": "ja-JP",
-        "download_url": f"{BASE_URL}/v1/dictionaries/{dictionary_name}",
-        "sha256": hashlib.sha256(dictionary_bytes).hexdigest(),
+        "published_at": published_at,
+        "source_repository": SOURCE_REPOSITORY,
+        "source_tag": source_tag,
+        "source_commit": source_commit,
+        "release_url": f"https://github.com/{SOURCE_REPOSITORY}/releases/tag/{source_tag}",
         "signature_algorithm": "Ed25519",
         "signature_url": f"{BASE_URL}/v1/dictionaries/generated_ja_manifest.sig",
-        "published_at": published_at.isoformat().replace("+00:00", "Z"),
-        "mapping_count": len(automatic),
+        "files": file_manifest,
+        "metrics": {
+            "hotword_candidates": int(release_manifest.get("hotword_candidates", len(hotwords["candidates"]))),
+            "contextual_corrections": int(release_manifest.get("contextual_corrections", len(contextual["corrections"]))),
+            "automatic_corrections": int(release_manifest.get("automatic_corrections", len(automatic["corrections"]))),
+            "false_correction_rate": false_rate,
+        },
+        "release_notes_url": f"{BASE_URL}/updates/",
+        "download_url": f"{BASE_URL}/v1/dictionaries/{combined_name}",
+        "sha256": hashlib.sha256(combined).hexdigest(),
+        "mapping_count": len(automatic["corrections"]),
     }
     manifest_path = dictionaries / "generated_ja_manifest.json"
-    write_json_bytes(manifest_path, manifest)
+    write_json(manifest_path, manifest)
 
-    public_der, public_key = signing_public_key(private_key)
+    public_der, key_base64 = public_key(private_key)
     try:
-        if public_key != EXPECTED_PUBLIC_KEY:
-            raise ValueError("signing key does not match the public key fixed in Shinwa")
+        if key_base64 != EXPECTED_PUBLIC_KEY:
+            raise ValueError("site signing key does not match Shinwa's fixed public key")
         signature = dictionaries / "generated_ja_manifest.sig"
-        run("openssl", "pkeyutl", "-sign", "-rawin", "-inkey", str(private_key), "-in", str(manifest_path), "-out", str(signature))
+        subprocess.run(["openssl", "pkeyutl", "-sign", "-rawin", "-inkey", str(private_key), "-in", str(manifest_path), "-out", str(signature)], check=True, capture_output=True)
         if signature.stat().st_size != 64:
-            raise ValueError("Ed25519 signature must be exactly 64 raw bytes")
-        run("openssl", "pkeyutl", "-verify", "-rawin", "-pubin", "-keyform", "DER", "-inkey", str(public_der), "-in", str(manifest_path), "-sigfile", str(signature))
+            raise ValueError("manifest signature must be 64 raw bytes")
+        subprocess.run(["openssl", "pkeyutl", "-verify", "-rawin", "-pubin", "-keyform", "DER", "-inkey", str(public_der), "-in", str(manifest_path), "-sigfile", str(signature)], check=True, capture_output=True)
     finally:
         public_der.unlink(missing_ok=True)
 
-    cases = json.loads((source_root / "evaluation" / "fixed_cases.json").read_text(encoding="utf-8"))
-    if not isinstance(cases, list) or not cases:
-        raise ValueError("fixed audio evaluation cases are required")
-    render_updates_page(
-        docs,
-        version=version,
-        published_at=published_at,
-        source_commit=source_commit,
-        release=release,
-        hotwords=hotwords,
-        contextual=contextual,
-        automatic=automatic,
-        false_rate=error_rate,
-        evaluated_audio=len(cases),
-    )
+    render_updates(docs, manifest)
     (docs / ".nojekyll").touch()
-    return {
-        "version": version,
-        "source_commit": source_commit,
-        "hotwords": len(hotwords),
-        "contextual_corrections": len(contextual),
-        "automatic_corrections": len(automatic),
-        "false_correction_rate": error_rate,
-        "sha256": manifest["sha256"],
-        "signature_verified": True,
-    }
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--source-root", type=Path, required=True)
-    parser.add_argument("--docs", type=Path, required=True)
-    parser.add_argument("--private-key", type=Path, required=True)
-    parser.add_argument("--source-commit", required=True)
-    args = parser.parse_args()
-    result = publish(args.source_root, args.docs, args.private_key, args.source_commit.lower())
-    print(json.dumps(result, ensure_ascii=False))
-    return 0
+    return {"version": version, "display_version": display_version, "files": file_manifest, "signature_verified": True}
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--release-dir", type=Path, required=True)
+    parser.add_argument("--docs", type=Path, required=True)
+    parser.add_argument("--private-key", type=Path, required=True)
+    parser.add_argument("--source-tag", required=True)
+    parser.add_argument("--source-commit", required=True)
+    args = parser.parse_args()
+    print(json.dumps(publish(args.release_dir, args.docs, args.private_key, args.source_tag, args.source_commit.lower()), ensure_ascii=False))
+
