@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "dictionary_kind": "generated",
+  "version": 1,
+  "locale": "ja-JP",
+  "download_url": "https://saxophoenix.github.io/shinwa-updates/v1/dictionaries/generated_ja_v1.json",
+  "sha256": "4049f63fd41abd03d1c7e453b5ee6dbf629eb85f28a7393a9b7710da0b32efe7",
+  "signature_algorithm": "Ed25519",
+  "signature_url": "https://saxophoenix.github.io/shinwa-updates/v1/dictionaries/generated_ja_manifest.sig",
+  "published_at": "2026-08-09T03:14:52Z",
+  "mapping_count": 0
+}

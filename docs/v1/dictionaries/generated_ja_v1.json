@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "locale": "ja-JP",
+  "generated_by": "shinwa-speech-dictionary-lab",
+  "source_commit": "923dac33c02dbdb9b7d6d3f9224bef02fcce336d",
+  "terms": [],
+  "misrecognitions": {},
+  "hotwords": [
+    {
+      "target": "悪心",
+      "reading": "おしん",
+      "category": "症状"
+    },
+    {
+      "target": "喘鳴",
+      "reading": "ぜんめい",
+      "category": "所見"
+    },
+    {
+      "target": "嘔吐",
+      "reading": "おうと",
+      "category": "症状"
+    },
+    {
+      "target": "悪心",
+      "reading": "おしん",
+      "category": "症状"
+    },
+    {
+      "target": "既往歴",
+      "reading": "きおうれき",
+      "category": "問診"
+    },
+    {
+      "target": "ラ音",
+      "reading": "らおん",
+      "category": "所見"
+    },
+    {
+      "target": "酸素飽和度",
+      "reading": "さんそほうわど",
+      "category": "検査"
+    }
+  ],
+  "contextual_corrections": [
+    {
+      "source": "イントウ痛",
+      "target": "咽頭痛",
+      "reading": "いんとうつう",
+      "category": "症状",
+      "department": "症状"
+    }
+  ],
+  "automatic_corrections": {}
+}
