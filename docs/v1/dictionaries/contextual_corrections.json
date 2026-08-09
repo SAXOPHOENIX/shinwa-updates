@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "locale": "ja-JP",
+  "corrections": [
+    {
+      "source": "イントウ痛",
+      "target": "咽頭痛",
+      "reading": "いんとうつう",
+      "category": "症状",
+      "department": "症状"
+    }
+  ]
+}

@@ -1,0 +1,190 @@
+{
+  "version": 202608091253,
+  "locale": "ja-JP",
+  "generated_by": "shinwa-speech-dictionary-lab",
+  "source_commit": "76953165cd2220486068873efd17e7a7ef46f2f7",
+  "terms": [],
+  "misrecognitions": {},
+  "hotwords": [
+    {
+      "target": "1型糖尿病性精神障害",
+      "reading": "1がたとうにょうびょうせいせいしんしょうがい",
+      "category": "医療用語"
+    },
+    {
+      "target": "1＋1/2症候群",
+      "reading": "1+1/2しょうこうぐん",
+      "category": "医療用語"
+    },
+    {
+      "target": "（1→3）-β-D-グルカン",
+      "reading": "13べーたでぃーぐるかん",
+      "category": "医療用語"
+    },
+    {
+      "target": "（1→3）-β-D-グルカン",
+      "reading": "13べーたでぃーぐるかん",
+      "category": "医療用語"
+    },
+    {
+      "target": "18トリソミー",
+      "reading": "18とりそみー",
+      "category": "医療用語"
+    },
+    {
+      "target": "18トリソミー",
+      "reading": "18とりそみー",
+      "category": "医療用語"
+    },
+    {
+      "target": "1型糖尿病性腎症",
+      "reading": "1がたとうにょうびょうせいじんしょう",
+      "category": "医療用語"
+    },
+    {
+      "target": "1型糖尿病性昏睡",
+      "reading": "1がたとうにょうびょうせいこんすい",
+      "category": "医療用語"
+    },
+    {
+      "target": "1型糖尿病合併妊娠",
+      "reading": "1がたとうにょうびょうがっぺいにんしん",
+      "category": "医療用語"
+    },
+    {
+      "target": "1型糖尿病性壊疽",
+      "reading": "1がたとうにょうびょうせいえそ",
+      "category": "医療用語"
+    },
+    {
+      "target": "1型糖尿病性中心性網膜症",
+      "reading": "1がたとうにょうびょうせいちゅうしんせいもうまくしょ",
+      "category": "医療用語"
+    },
+    {
+      "target": "1型糖尿病性肝障害",
+      "reading": "1がたとうにょうびょうせいかんしょうがい",
+      "category": "医療用語"
+    },
+    {
+      "target": "1型糖尿病性黄斑浮腫",
+      "reading": "1がたとうにょうびょうせいおうはんふしゅ",
+      "category": "医療用語"
+    },
+    {
+      "target": "1型糖尿病性黄斑浮腫",
+      "reading": "1がたとうにょうびょうせいおうはんふしゅ",
+      "category": "医療用語"
+    },
+    {
+      "target": "1型糖尿病性高コレステロール血症",
+      "reading": "1がたとうにょうびょうせいこうこれすてろーるけっしょう",
+      "category": "医療用語"
+    },
+    {
+      "target": "1型糖尿病性潰瘍",
+      "reading": "1がたとうにょうびょうせいかいよう",
+      "category": "医療用語"
+    },
+    {
+      "target": "1型糖尿病性ケトアシドーシス",
+      "reading": "1がたとうにょうびょうせいけとあしどーしす",
+      "category": "医療用語"
+    },
+    {
+      "target": "1型糖尿病性腎不全",
+      "reading": "1がたとうにょうびょうせいじんふぜん",
+      "category": "医療用語"
+    },
+    {
+      "target": "1型糖尿病性腎硬化症",
+      "reading": "1がたとうにょうびょうせいじんこうかしょう",
+      "category": "医療用語"
+    },
+    {
+      "target": "悪心",
+      "reading": "おしん",
+      "category": "症状"
+    },
+    {
+      "target": "悪心",
+      "reading": "おしん",
+      "category": "症状"
+    },
+    {
+      "target": "HbA1c",
+      "reading": "へもぐろびんえーわんしー",
+      "category": "検査"
+    },
+    {
+      "target": "1型糖尿病性そう痒症",
+      "reading": "1がたとうにょうびょうせいそうようしょう",
+      "category": "医療用語"
+    },
+    {
+      "target": "1型糖尿病性水疱",
+      "reading": "1がたとうにょうびょうせいすいほう",
+      "category": "医療用語"
+    },
+    {
+      "target": "1型糖尿病性単ニューロパチー",
+      "reading": "1がたとうにょうびょうせいたんにゅーろぱちー",
+      "category": "医療用語"
+    },
+    {
+      "target": "喘鳴",
+      "reading": "ぜんめい",
+      "category": "所見"
+    },
+    {
+      "target": "嘔吐",
+      "reading": "おうと",
+      "category": "症状"
+    },
+    {
+      "target": "悪心",
+      "reading": "おしん",
+      "category": "症状"
+    },
+    {
+      "target": "既往歴",
+      "reading": "きおうれき",
+      "category": "問診"
+    },
+    {
+      "target": "ラ音",
+      "reading": "らおん",
+      "category": "所見"
+    },
+    {
+      "target": "酸素飽和度",
+      "reading": "さんそほうわど",
+      "category": "検査"
+    },
+    {
+      "target": "18常染色体異常",
+      "reading": "18じょうせんしょくたいいじょう",
+      "category": "医療用語"
+    },
+    {
+      "target": "1型糖尿病性骨症",
+      "reading": "1がたとうにょうびょうせいこつしょう",
+      "category": "医療用語"
+    },
+    {
+      "target": "1型糖尿病性そう痒症",
+      "reading": "1がたとうにょうびょうせいそうようしょう",
+      "category": "医療用語"
+    }
+  ],
+  "contextual_corrections": [
+    {
+      "source": "イントウ痛",
+      "target": "咽頭痛",
+      "reading": "いんとうつう",
+      "category": "症状",
+      "department": "症状"
+    }
+  ],
+  "automatic_corrections": {}
+}

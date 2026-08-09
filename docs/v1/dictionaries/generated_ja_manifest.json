@@ -1,12 +1,38 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "dictionary_kind": "generated",
-  "version": 1,
+  "version": 202608091253,
+  "display_version": "2026.08.09.1253",
   "locale": "ja-JP",
-  "download_url": "https://saxophoenix.github.io/shinwa-updates/v1/dictionaries/generated_ja_v1.json",
-  "sha256": "4049f63fd41abd03d1c7e453b5ee6dbf629eb85f28a7393a9b7710da0b32efe7",
+  "published_at": "2026-08-09T12:53:44+09:00",
+  "source_repository": "SAXOPHOENIX/shinwa-speech-dictionary-lab",
+  "source_tag": "dictionary-update-v2026.08.09.1253",
+  "source_commit": "76953165cd2220486068873efd17e7a7ef46f2f7",
+  "release_url": "https://github.com/SAXOPHOENIX/shinwa-speech-dictionary-lab/releases/tag/dictionary-update-v2026.08.09.1253",
   "signature_algorithm": "Ed25519",
   "signature_url": "https://saxophoenix.github.io/shinwa-updates/v1/dictionaries/generated_ja_manifest.sig",
-  "published_at": "2026-08-09T03:14:52Z",
+  "files": {
+    "hotwords": {
+      "url": "https://saxophoenix.github.io/shinwa-updates/v1/dictionaries/hotwords.json",
+      "sha256": "db8da01dea1f94c4cbb6c054a5cea7c04023725016880ec2014f0b183ada850a"
+    },
+    "contextual_corrections": {
+      "url": "https://saxophoenix.github.io/shinwa-updates/v1/dictionaries/contextual_corrections.json",
+      "sha256": "25720d9a79048c5e64a169b67802eb5700d7a37cc39e6ccc06b943650fe1f8ad"
+    },
+    "automatic_corrections": {
+      "url": "https://saxophoenix.github.io/shinwa-updates/v1/dictionaries/automatic_corrections.json",
+      "sha256": "d0538a8b6b8a3a6d60b509d4e3d922c94eab908952ae74c1633c12e183cc10bc"
+    }
+  },
+  "metrics": {
+    "hotword_candidates": 34,
+    "contextual_corrections": 1,
+    "automatic_corrections": 0,
+    "false_correction_rate": 0.0
+  },
+  "release_notes_url": "https://saxophoenix.github.io/shinwa-updates/updates/",
+  "download_url": "https://saxophoenix.github.io/shinwa-updates/v1/dictionaries/generated_ja_v202608091253.json",
+  "sha256": "e6241054f892b50e31185bd80245718cdb0d649d70cd14b3c94d5d3e72ec1c83",
   "mapping_count": 0
 }
