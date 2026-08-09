@@ -1,0 +1,17 @@
+# 診和アップデート配信 Developer Log
+
+## 2026-08-09 初回公開
+
+- 公開リポジトリ `SAXOPHOENIX/shinwa-updates` を作成した。
+- GitHub PagesをActions方式で有効化し、`https://saxophoenix.github.io/shinwa-updates/` を公開した。
+- `Publish Shinwa dictionary update` ワークフローを追加した。
+- `workflow_dispatch` と `repository_dispatch` の両方で、教育リポジトリの完全な40文字 `source_commit` を受け取るようにした。
+- 非公開教育リポジトリを指定コミットへ固定してcheckoutし、取得後のHEADが入力SHAと一致することを確認する。
+- hotwords、文脈条件付き補正、自動補正を別構造で保持し、無条件補正には `automatic_corrections` だけを使用する。
+- legacy候補、患者情報、音声、書き起こし、SOAP、カルテ本文、秘密鍵を公開物へ含めない。
+- JSON schema、`locale=ja-JP`、バージョン単調増加、空文字、同一変換、数値、左右、極性、一般文章負例、誤補正率を検査する。
+- manifestの実ファイルバイト列をEd25519で署名し、raw 64-byte署名を保存する。署名直後に固定公開鍵で再検証する。
+- 検査と署名が完了するまで既存 `docs/` を変更せず、失敗時に既存公開版を維持する。
+- 初回は教育コミット `923dac33c02dbdb9b7d6d3f9224bef02fcce336d` からmanifest version 1を公開した。
+- 公開辞書SHA-256は `4049f63fd41abd03d1c7e453b5ee6dbf629eb85f28a7393a9b7710da0b32efe7`。
+- 公開URLから取得したmanifestについて、固定公開鍵で `Signature Verified Successfully` を確認した。
