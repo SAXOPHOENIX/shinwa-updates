@@ -27,3 +27,7 @@
 - 現行診和との互換性維持のため、3構造をまとめた版付き辞書も生成し、manifestの `download_url` と `sha256` で参照できるようにした。
 - Pages用manifestの実バイト列を同じEd25519鍵で署名し、署名直後と公開後に固定公開鍵で検証する。
 - Windows側Releaseの検証またはPages生成に失敗した場合は、既存 `docs/` と公開版を変更しない。
+- 最新Release `dictionary-update-v2026.08.09.1253`、コミット `76953165cd2220486068873efd17e7a7ef46f2f7` を公開した。manifest整数versionは `202608091253`。
+- 公開SHA-256はhotwords `db8da01dea1f94c4cbb6c054a5cea7c04023725016880ec2014f0b183ada850a`、文脈補正 `25720d9a79048c5e64a169b67802eb5700d7a37cc39e6ccc06b943650fe1f8ad`、自動補正 `d0538a8b6b8a3a6d60b509d4e3d922c94eab908952ae74c1633c12e183cc10bc`。
+- GitHub Pagesから再取得したmanifest、3つのJSON、互換辞書についてSHA-256、HTTPS URL、禁止情報除外、raw 64-byte署名を再検証した。
+- Windows側リポジトリのdefault branchへ `Notify Shinwa update site` を追加した。今後 `dictionary-update-v*` Releaseのpublishedイベントで、`dictionary_update_requested` を更新サイトへ自動送信する。
