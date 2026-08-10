@@ -1,7 +1,11 @@
 {
-  "schema_version": 1,
+  "version": 202608101241,
   "locale": "ja-JP",
-  "candidates": [
+  "generated_by": "shinwa-speech-dictionary-lab",
+  "source_commit": "147c2aa91db984eb52cfef76f6ad1d4f3b6c8c10",
+  "terms": [],
+  "misrecognitions": {},
+  "hotwords": [
     {
       "target": "1＋1/2症候群",
       "reading": "1+1/2しょうこうぐん",
@@ -502,5 +506,178 @@
       "reading": "1がたとうにょうびょうせいしんけいつう",
       "category": "医療用語"
     }
-  ]
+  ],
+  "contextual_corrections": [
+    {
+      "source": "くらいやった",
+      "target": "くらいあった",
+      "context_any": [
+        "度",
+        "℃",
+        "熱",
+        "体温",
+        "発熱"
+      ],
+      "prefix_any": [
+        "度",
+        "℃"
+      ],
+      "departments": [
+        "内科",
+        "問診",
+        "症状"
+      ],
+      "confidence": 0.95,
+      "false_positive_test_passed": true
+    },
+    {
+      "source": "イントウ痛",
+      "target": "咽頭痛",
+      "context_any": [
+        "咽頭",
+        "発熱",
+        "嚥下",
+        "診察"
+      ],
+      "departments": [
+        "症状",
+        "耳鼻咽喉科",
+        "内科"
+      ],
+      "confidence": 0.6378,
+      "false_positive_test_passed": true
+    },
+    {
+      "source": "密開を",
+      "target": "三日以上",
+      "context_any": [
+        "熱が",
+        "発熱",
+        "続く",
+        "続いて"
+      ],
+      "prefix_any": [
+        "熱が"
+      ],
+      "suffix_any": [
+        "続く",
+        "続いて"
+      ],
+      "departments": [
+        "内科",
+        "問診",
+        "症状"
+      ],
+      "confidence": 0.96,
+      "false_positive_test_passed": true
+    },
+    {
+      "source": "愛の音",
+      "target": "肺の音",
+      "context_any": [
+        "胸の音",
+        "聴診",
+        "呼吸音",
+        "ゼーゼー",
+        "息を吸って",
+        "きれい"
+      ],
+      "exclude_any": [
+        "恋愛",
+        "音楽",
+        "歌"
+      ],
+      "departments": [
+        "内科",
+        "呼吸器科",
+        "身体診察",
+        "症状"
+      ],
+      "confidence": 0.98,
+      "false_positive_test_passed": true
+    },
+    {
+      "source": "症病",
+      "target": "持病",
+      "context_any": [
+        "について確認",
+        "喘息",
+        "心臓病",
+        "糖尿病",
+        "治療中",
+        "服薬"
+      ],
+      "suffix_any": [
+        "について確認します"
+      ],
+      "exclude_any": [
+        "症病分類"
+      ],
+      "departments": [
+        "内科",
+        "問診",
+        "症状"
+      ],
+      "confidence": 0.98,
+      "false_positive_test_passed": true
+    },
+    {
+      "source": "開いてください",
+      "target": "吐いてください",
+      "context_any": [
+        "息を吸って",
+        "深呼吸",
+        "聴診",
+        "呼吸"
+      ],
+      "prefix_any": [
+        "息を吸って"
+      ],
+      "exclude_any": [
+        "口を開いて",
+        "目を開いて",
+        "手を開いて"
+      ],
+      "departments": [
+        "内科",
+        "呼吸器科",
+        "身体診察",
+        "症状"
+      ],
+      "confidence": 0.99,
+      "false_positive_test_passed": true
+    },
+    {
+      "source": "風",
+      "target": "風邪",
+      "context_any": [
+        "発熱",
+        "咳",
+        "鼻水",
+        "咽頭痛",
+        "インフルエンザ",
+        "診察",
+        "症状"
+      ],
+      "suffix_any": [
+        "の症状",
+        "をひいた",
+        "気味"
+      ],
+      "exclude_any": [
+        "風が強い",
+        "台風",
+        "風速",
+        "風向"
+      ],
+      "departments": [
+        "内科",
+        "問診",
+        "症状"
+      ],
+      "confidence": 0.92,
+      "false_positive_test_passed": true
+    }
+  ],
+  "automatic_corrections": {}
 }

@@ -1,24 +1,24 @@
 {
   "schema_version": 2,
   "dictionary_kind": "generated",
-  "version": 202608091253,
-  "display_version": "2026.08.09.1253",
+  "version": 202608101241,
+  "display_version": "2026.08.10.1241",
   "locale": "ja-JP",
-  "published_at": "2026-08-09T12:53:44+09:00",
+  "published_at": "2026-08-10T12:41:29+09:00",
   "source_repository": "SAXOPHOENIX/shinwa-speech-dictionary-lab",
-  "source_tag": "dictionary-update-v2026.08.09.1253",
-  "source_commit": "76953165cd2220486068873efd17e7a7ef46f2f7",
-  "release_url": "https://github.com/SAXOPHOENIX/shinwa-speech-dictionary-lab/releases/tag/dictionary-update-v2026.08.09.1253",
+  "source_tag": "dictionary-update-v2026.08.10.1241",
+  "source_commit": "147c2aa91db984eb52cfef76f6ad1d4f3b6c8c10",
+  "release_url": "https://github.com/SAXOPHOENIX/shinwa-speech-dictionary-lab/releases/tag/dictionary-update-v2026.08.10.1241",
   "signature_algorithm": "Ed25519",
   "signature_url": "https://saxophoenix.github.io/shinwa-updates/v1/dictionaries/generated_ja_manifest.sig",
   "files": {
     "hotwords": {
       "url": "https://saxophoenix.github.io/shinwa-updates/v1/dictionaries/hotwords.json",
-      "sha256": "db8da01dea1f94c4cbb6c054a5cea7c04023725016880ec2014f0b183ada850a"
+      "sha256": "5bc5b15a0439e9b9d5d8a2af695f443c6973d70e165e36c23badf20d79e8c198"
     },
     "contextual_corrections": {
       "url": "https://saxophoenix.github.io/shinwa-updates/v1/dictionaries/contextual_corrections.json",
-      "sha256": "25720d9a79048c5e64a169b67802eb5700d7a37cc39e6ccc06b943650fe1f8ad"
+      "sha256": "aa9a4b75bac0d0affc53c4333d6baf762b658c0e910a754486c12014cd45f129"
     },
     "automatic_corrections": {
       "url": "https://saxophoenix.github.io/shinwa-updates/v1/dictionaries/automatic_corrections.json",
@@ -26,13 +26,13 @@
     }
   },
   "metrics": {
-    "hotword_candidates": 34,
-    "contextual_corrections": 1,
+    "hotword_candidates": 100,
+    "contextual_corrections": 7,
     "automatic_corrections": 0,
     "false_correction_rate": 0.0
   },
   "release_notes_url": "https://saxophoenix.github.io/shinwa-updates/updates/",
-  "download_url": "https://saxophoenix.github.io/shinwa-updates/v1/dictionaries/generated_ja_v202608091253.json",
-  "sha256": "e6241054f892b50e31185bd80245718cdb0d649d70cd14b3c94d5d3e72ec1c83",
+  "download_url": "https://saxophoenix.github.io/shinwa-updates/v1/dictionaries/generated_ja_v202608101241.json",
+  "sha256": "d53689ba598ec62d59df1632b4f41c90eaa09a3618acb0210cd0ce78cf9d4c33",
   "mapping_count": 0
 }
