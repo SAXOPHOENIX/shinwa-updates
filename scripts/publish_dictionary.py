@@ -79,7 +79,34 @@ def safe_record(source: str, record: dict[str, Any], *, contextual: bool) -> dic
         "category": str(record.get("category", "")).strip()[:80],
         "department": str(record.get("department", "")).strip()[:80],
     }
-    return {key: values[key] for key in allowed if values[key]}
+    result = {key: values[key] for key in allowed if values[key]}
+    if contextual:
+        for key in (
+            "context_any",
+            "prefix_any",
+            "suffix_any",
+            "exclude_any",
+            "required_medical_terms",
+            "departments",
+        ):
+            raw = record.get(key, [])
+            if isinstance(raw, list):
+                cleaned = list(
+                    dict.fromkeys(
+                        str(value).strip()[:100]
+                        for value in raw
+                        if str(value).strip()
+                    )
+                )[:30]
+                if cleaned:
+                    result[key] = cleaned
+        confidence = record.get("confidence")
+        if isinstance(confidence, (int, float)):
+            result["confidence"] = max(0.0, min(float(confidence), 1.0))
+        result["false_positive_test_passed"] = (
+            record.get("false_positive_test_passed") is True
+        )
+    return result
 
 
 def sanitize_release_json(release_dir: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
@@ -91,8 +118,8 @@ def sanitize_release_json(release_dir: Path) -> tuple[dict[str, Any], dict[str, 
         ("contextual_corrections.json", contextual, "corrections"),
         ("automatic_corrections.json", automatic, "corrections"),
     ):
-        if payload.get("schema_version") != 1 or payload.get("locale") != "ja-JP" or not isinstance(payload.get(key), dict):
-            raise ValueError(f"{name}: schema_version=1, locale=ja-JP, and an object payload are required")
+        if payload.get("schema_version") not in (1, 2) or payload.get("locale") != "ja-JP" or not isinstance(payload.get(key), dict):
+            raise ValueError(f"{name}: schema_version 1 or 2, locale=ja-JP, and an object payload are required")
 
     public_hotwords = {
         "schema_version": 1,
@@ -270,4 +297,3 @@ if __name__ == "__main__":
     parser.add_argument("--source-commit", required=True)
     args = parser.parse_args()
     print(json.dumps(publish(args.release_dir, args.docs, args.private_key, args.source_tag, args.source_commit.lower()), ensure_ascii=False))
-

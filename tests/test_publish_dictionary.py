@@ -60,6 +60,34 @@ def test_sanitizes_transcripts_and_keeps_structures_separate(tmp_path: Path) -> 
     assert automatic["corrections"] == {}
 
 
+def test_accepts_schema_two_and_preserves_safe_context_rules(tmp_path: Path) -> None:
+    make_release(tmp_path)
+    hotwords_path = tmp_path / "hotwords.json"
+    hotwords = json.loads(hotwords_path.read_text())
+    hotwords["schema_version"] = 2
+    hotwords_path.write_text(json.dumps(hotwords, ensure_ascii=False))
+    contextual_path = tmp_path / "contextual_corrections.json"
+    contextual = json.loads(contextual_path.read_text())
+    contextual["schema_version"] = 2
+    contextual["corrections"]["気管市全息"].update({
+        "context_any": ["喘鳴", "呼吸器"],
+        "exclude_any": ["市役所"],
+        "confidence": 0.98,
+        "false_positive_test_passed": True,
+        "recognized_text": "公開しない患者文",
+    })
+    contextual_path.write_text(json.dumps(contextual, ensure_ascii=False))
+
+    _, public_contextual, _ = publisher.sanitize_release_json(tmp_path)
+
+    rule = public_contextual["corrections"][0]
+    assert rule["context_any"] == ["喘鳴", "呼吸器"]
+    assert rule["exclude_any"] == ["市役所"]
+    assert rule["confidence"] == 0.98
+    assert rule["false_positive_test_passed"] is True
+    assert "recognized_text" not in json.dumps(rule, ensure_ascii=False)
+
+
 def test_builds_schema_two_manifest_with_compatible_dictionary(tmp_path: Path) -> None:
     release = tmp_path / "release"
     docs = tmp_path / "docs"
@@ -94,4 +122,3 @@ def test_rejects_non_increasing_version(tmp_path: Path) -> None:
     manifest.parent.mkdir(parents=True)
     manifest.write_text('{"version":202608091253}', encoding="utf-8")
     assert publisher.current_version(docs) == 202608091253
-
